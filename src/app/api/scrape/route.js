@@ -2,8 +2,8 @@
 import * as cheerio from "cheerio";
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";        // 👈 Cheerio needs Node, not Edge
-export const dynamic = "force-dynamic"; // avoid static caching of this route
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const DEFAULT_UA =
   "Mozilla/5.0 (compatible; NextScraper/1.0; +https://example.com/bot)";
@@ -30,7 +30,6 @@ export async function GET(request) {
       );
     }
 
-    // Optional timeout (15s) with AbortController
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -52,7 +51,7 @@ export async function GET(request) {
 
     const contentType = (res.headers.get("content-type") || "").toLowerCase();
     if (!contentType.includes("text/html")) {
-      // Some pages return text/plain for HTML; allow that too
+      
       if (!contentType.includes("text/plain")) {
         return NextResponse.json(
           { error: `Unsupported content-type: ${contentType}` },
