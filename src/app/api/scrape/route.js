@@ -7,7 +7,8 @@ export const dynamic = "force-dynamic";
 
 const DEFAULT_UA =
   "Mozilla/5.0 (compatible; NextScraper/1.0; +https://example.com/bot)";
-const TEXT_TAGS = "p,li,blockquote,article,section";
+const TEXT_TAGS = "p,li,blockquote,article,section,pre,code";
+
 
 function isValidHttpUrl(str) {
   try {
@@ -114,7 +115,7 @@ export async function GET(request) {
       .filter(Boolean);
 
     const fullText = textChunks.join("\n").trim();
-    const excerpt = fullText.slice(0, 2000);
+    const excerpt = fullText.slice(0, 4000);
 
     return NextResponse.json(
       {
