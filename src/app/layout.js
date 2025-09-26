@@ -1,7 +1,7 @@
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-
+import { StoryblokContextProvider } from "@/app/lib/StoryblokContext";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -21,7 +21,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`min-h-screen bg-white text-gray-900 font-sans ${geistSans.variable} ${geistMono.variable}`}>
+        <StoryblokContextProvider>
         {children}
+        </StoryblokContextProvider>
       </body>
     </html>
   );
