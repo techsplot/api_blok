@@ -1,13 +1,17 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@progress/kendo-react-inputs";
 import { Button } from "@progress/kendo-react-buttons";
 import { Search, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useStoryblok } from "@/app/lib/StoryblokContext"; // Our new hook
+import { useStoryblok } from "@/app/lib/StoryblokContext";
+import { searchClient } from "@/app/lib/algolia";
+import { autocomplete } from "@algolia/autocomplete-js";
+import "@algolia/autocomplete-theme-classic/dist/theme.css";
 
+// Login/Signup Form
 function LoginSignupForm({ onSubmit }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,9 +35,8 @@ function LoginSignupForm({ onSubmit }) {
 
   return (
     <form
-      className={`rounded-2xl shadow-2xl px-6 py-6 w-full max-w-md mx-auto flex flex-col border border-gray-100 ${
-        isSignup ? "gap-4" : "gap-6"
-      }`}
+      className={`rounded-2xl shadow-2xl px-6 py-6 w-full max-w-md mx-auto flex flex-col border border-gray-100 ${isSignup ? "gap-4" : "gap-6"
+        }`}
       style={{ background: "white" }}
       onSubmit={handleSubmit}
     >
@@ -43,10 +46,7 @@ function LoginSignupForm({ onSubmit }) {
       <div className={`flex flex-col ${isSignup ? "gap-3" : "gap-6"}`}>
         {isSignup && (
           <div className="flex flex-col gap-2">
-            <label
-              htmlFor="fullName"
-              className="text-base text-gray-700 font-medium mb-1"
-            >
+            <label htmlFor="fullName" className="text-base text-gray-700 font-medium mb-1">
               Full Name
             </label>
             <Input
@@ -70,10 +70,7 @@ function LoginSignupForm({ onSubmit }) {
           </div>
         )}
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="email"
-            className="text-base text-gray-700 font-medium mb-1"
-          >
+          <label htmlFor="email" className="text-base text-gray-700 font-medium mb-1">
             Email address
           </label>
           <Input
@@ -96,10 +93,7 @@ function LoginSignupForm({ onSubmit }) {
           />
         </div>
         <div className="flex flex-col gap-2">
-          <label
-            htmlFor="password"
-            className="text-base text-gray-700 font-medium mb-1"
-          >
+          <label htmlFor="password" className="text-base text-gray-700 font-medium mb-1">
             Password
           </label>
           <Input
@@ -125,10 +119,7 @@ function LoginSignupForm({ onSubmit }) {
         </div>
         {isSignup && (
           <div className="flex flex-col gap-2">
-            <label
-              htmlFor="confirmPassword"
-              className="text-base text-gray-700 font-medium mb-1"
-            >
+            <label htmlFor="confirmPassword" className="text-base text-gray-700 font-medium mb-1">
               Confirm Password
             </label>
             <Input
@@ -177,6 +168,7 @@ function LoginSignupForm({ onSubmit }) {
   );
 }
 
+// Landing Page
 export default function Home() {
   const { storyblokApi, version } = useStoryblok();
   const [query, setQuery] = useState("");
@@ -189,23 +181,17 @@ export default function Home() {
     }
     return null;
   });
-
   const [apiData, setApiData] = useState(null);
   const router = useRouter();
+  const autocompleteRef = useRef(null);
 
-  // Fetch API details from Storyblok
+  // Fetch Storyblok data
   useEffect(() => {
     async function fetchData() {
       try {
-          const { data } = await storyblokApi.get("cdn/stories/apis/api_docs", { version });
-          if (data && data.story && data.story.content) {
-            console.log("Success: Fetched from Storyblok");
-            setApiData(data.story.content);
-            return data.story.content;
-          } else {
-            setApiData(null);
-            return null;
-          }
+        const { data } = await storyblokApi.get("cdn/stories/apis/api_docs", { version });
+        if (data?.story?.content) setApiData(data.story.content);
+        else setApiData(null);
       } catch (err) {
         console.error("Error fetching Storyblok data:", err);
       }
@@ -213,7 +199,47 @@ export default function Home() {
     if (storyblokApi) fetchData();
   }, [storyblokApi, version]);
 
-  const handleSearch = async (e) => {
+  // Algolia Autocomplete
+useEffect(() => {
+  if (!autocompleteRef.current) return;
+
+  const ac = autocomplete({
+    container: autocompleteRef.current, // only render the suggestions panel
+    placeholder: "", // input is already controlled by React
+    openOnFocus: false, // only open when typing
+    getSources() {
+      return [
+        {
+          sourceId: "apis",
+          getItems({ query }) {
+            if (!query || query.trim().length === 0) return [];
+            return searchClient
+              .search([{ indexName: "api_docs", query, params: { hitsPerPage: 5 } }])
+              .then(({ results }) => results[0].hits);
+          },
+          templates: {
+            item({ item }) {
+              return `
+                <div class="px-4 py-2 cursor-pointer rounded hover:bg-gray-700">
+                  <strong class="text-white">${item.name}</strong>
+                  <div class="text-gray-300 text-sm">${item.category}</div>
+                </div>
+              `;
+            },
+          },
+        },
+      ];
+    },
+    onSelect({ item }) {
+      router.push(`/search?q=${encodeURIComponent(item.name)}`);
+    },
+  });
+
+  return () => ac.destroy();
+}, [router]);
+
+
+  const handleSearch = (e) => {
     e.preventDefault();
     if (!query.trim()) return;
     setLoading(true);
@@ -271,26 +297,30 @@ export default function Home() {
       )}
 
       {/* Main content */}
-      <main className="flex flex-col items-center flex-1 px-6 py-12 mt-40">
+      <main className="flex flex-col items-center flex-1 px-6 py-12 mt-40 w-full">
         {/* Search Section */}
         <div className="sticky top-20 z-40 w-full max-w-2xl bg-white pb-6">
           <h1 className="text-3xl font-medium text-gray-900 mb-6 text-center">Search APIs!</h1>
-          <form onSubmit={handleSearch} className="flex items-center bg-[#1D2534] rounded-full px-6 py-3 shadow gap-3">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search APIs by name, category, or keyword"
-              className="w-full flex-1 bg-transparent outline-none text-gray-100 placeholder-gray-400 text-base"
-            />
-            <button
-              type="submit"
-              disabled={loading}
-              className="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition"
-            >
-              {loading ? <span className="text-xs text-white">⏳</span> : <Search className="h-5 w-5 text-white cursor-pointer" />}
-            </button>
-          </form>
+          <form onSubmit={handleSearch} className="relative flex items-center bg-[#1D2534] rounded-full px-6 py-3 shadow gap-3 w-full max-w-2xl mx-auto">
+  <input
+    type="text"
+    value={query}
+    onChange={(e) => setQuery(e.target.value)}
+    placeholder="Search APIs by name, category, or keyword"
+    className="w-full flex-1 bg-transparent outline-none text-gray-100 placeholder-gray-400 text-base"
+  />
+  {/* Autocomplete suggestions panel */}
+  <div ref={autocompleteRef} className="absolute top-full left-0 w-full z-50" />
+  <button
+    type="submit"
+    disabled={loading}
+    className="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition"
+  >
+    {loading ? <span className="text-xs text-white">⏳</span> : <Search className="h-5 w-5 text-white cursor-pointer" />}
+  </button>
+</form>
+
+
         </div>
 
         {/* Storyblok Data Preview */}

@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+.algolia-autocomplete .aa-Panel {
+  background-color: #1D2534; /* match your search bar */
+  border-radius: 9999px;
+  margin-top: 0.25rem;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.algolia-autocomplete .aa-Item {
+  padding: 0.5rem 1rem;
+  color: white;
+}
+
+.algolia-autocomplete .aa-Item:hover {
+  background-color: #2c3650;
+}
+
+.algolia-autocomplete .aa-Item div {
+  color: #d1d5db; /* gray-300 for category */
+}
