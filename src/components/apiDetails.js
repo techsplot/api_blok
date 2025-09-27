@@ -45,26 +45,38 @@ export function ApiDetail({ api, onNavigate }) {
 		<div className="min-h-screen bg-white">
 			{/* Header */}
 			<div className="bg-white border-b border-gray-200 px-6 py-4">
-				<div className="max-w-7xl mx-auto flex items-center justify-between">
-					<div className="flex items-center gap-4">
-						<button
-							onClick={() => onNavigate('search')}
-							className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-						>
-							<ArrowLeft className="w-5 h-5" />
-						</button>
-						<div>
-							<h1 className="text-2xl font-medium">{api.title}</h1>
-							<p className="text-gray-600">{api.description}</p>
-						</div>
-					</div>
-					<button
-						onClick={() => onNavigate('chat')}
-						className="bg-gradient-to-r from-[#4FACFE] to-[#00F2FE] text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
-					>
-						Ask AI About This API
-					</button>
-				</div>
+			  <div className="max-w-7xl mx-auto flex items-center justify-between">
+			    {/* Left: Back + Title */}
+			    <div className="flex items-center gap-4">
+			      <button
+			        onClick={() => onNavigate("search")}
+			        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+			      >
+			        <ArrowLeft className="w-5 h-5" />
+			      </button>
+			      <div>
+			        <h1 className="text-2xl font-medium">{api.title}</h1>
+			        <p className="text-gray-600">{api.description}</p>
+			      </div>
+			    </div>
+			
+			    {/* Center: Blog Search Input */}
+			    <div className="flex-1 flex justify-center px-8">
+			      <input
+			        type="text"
+			        placeholder="Search more apis..."
+			        className="w-full max-w-md border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#4FACFE]"
+			      />
+			    </div>
+			
+			    {/* Right: Ask AI */}
+			    <button
+			      onClick={() => onNavigate("chat")}
+			      className="bg-gradient-to-r from-[#4FACFE] to-[#00F2FE] text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
+			    >
+			      Ask AI About This API
+			    </button>
+			  </div>
 			</div>
 
 			<div className="max-w-7xl mx-auto px-6 py-8">
