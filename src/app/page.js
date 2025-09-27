@@ -74,14 +74,14 @@ export default function Home() {
                 return html`<div class="aa-ItemWrapper">
                   <div class="aa-ItemContent">
                     <div class="aa-ItemIcon aa-ItemIcon--alignTop">
-                      <img src="${item.image || '/default-icon.png'}" alt="${item.name}" width="40" height="40" />
+                      <img src="${item.image || '/default-icon.png'}" alt="${item.name}" width="50" height="50" />
                     </div>
                     <div class="aa-ItemContentBody">
                       <div class="aa-ItemContentTitle">
                         ${components.Highlight({ hit: item, attribute: "name" })}
                       </div>
                       <div class="aa-ItemContentDescription">
-                        ${components.Snippet({ hit: item, attribute: "description" })}
+                        ${components.Snippet({ hit: item, attribute: "tag" })}
                       </div>
                     </div>
                   </div>
@@ -92,7 +92,7 @@ export default function Home() {
         ];
       },
       onSelect({ item }) {
-        router.push(`/search?q=${encodeURIComponent(item.name)}`);
+        window.location.href = `/search?q=${encodeURIComponent(item.name)}`;
       },
     });
 
@@ -148,17 +148,16 @@ export default function Home() {
       <main className="flex flex-col items-center flex-1 px-6 py-12 mt-40 w-full">
         {/* Search Section */}
         <div className="sticky top-20 z-40 w-full max-w-2xl bg-white pb-6">
-          <h1 className="text-3xl font-medium text-gray-900 mb-6 text-center">Search APIs!</h1>
-          <form onSubmit={handleSearch} className="relative flex items-center bg-[#1D2534] rounded-full px-6 py-3 shadow gap-3">
-            <div ref={autocompleteRef} className="w-full" />
-            <button
-              type="submit"
-              disabled={loading}
-              className="h-10 w-10 rounded-full bg-gray-700 flex items-center justify-center hover:bg-gray-600 transition"
-            >
-              {loading ? <span className="text-xs text-white">⏳</span> : <Search className="h-5 w-5 text-white cursor-pointer" />}
-            </button>
-          </form>
+          <h1 className="text-3xl font-medium text-gray-900 mb-2 text-center">Search APIs!</h1>
+          <p className="text-lg text-gray-600 text-center mb-6">
+            Discover, explore, and integrate APIs faster.
+          </p>
+          {/* <form
+            onSubmit={handleSearch}
+            className="relative flex items-center overflow-visible"
+          > */}
+            <div ref={autocompleteRef} className="w-full " />
+          {/* </form> */}
         </div>
 
         {/* Storyblok Data Preview */}

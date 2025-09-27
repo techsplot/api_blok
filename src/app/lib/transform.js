@@ -15,6 +15,7 @@ export function transformStoryblokData(stories) {
     description: richTextToPlainText(story.content.description),
     tags: story.content.tags || [],
     auth_method: story.content.auth_method || "",
+    image: story.content.logo?.filename || "",
     endpoints: (story.content.endpoints || []).map(ep => ({
       name: ep.name || "",
       path: ep.path || "",

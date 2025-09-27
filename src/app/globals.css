@@ -1,3 +1,52 @@
 @import "tailwindcss";
 
 
+/* Make sure Algolia autocomplete panel is visible above header */
+.aa-Panel {
+  width: auto !important;          /* shrink to fit content OR set exact width */
+  min-width: 50% !important;      /* at least as wide as input */
+  left: 50% !important;            /* start from center */
+  transform: translateX(-50%) !important; /* shift back to center */
+  z-index: 60 !important;
+  margin-top: 1rem;
+  background-color: #0b182b  !important;
+  color: #fff !important;
+}
+.aa-ItemWrapper:focus{
+    
+}
+/* Override highlighted (matched) characters */
+.aa-ItemContent mark {
+  background: transparent !important; /* remove yellow bg */
+  color: #25b6eb !important;          /* Tailwind blue-600 */
+  font-weight: 600;
+}
+
+
+/* global.css */
+
+/* Force override Algolia input */
+/* Full autocomplete wrapper */
+.aa-Autocomplete {
+  width: 100%;
+  display: flex;
+  justify-content: center; /* center search bar */
+}
+
+/* Style the entire search bar container */
+.aa-Autocomplete .aa-Form {
+  background-color: #1d2534 ; /* dark background */
+  border-radius: 9999px ;     /* rounded-full */
+  border: 1px solid #374151 ; /* gray-700 */
+  padding: 0.5rem 1rem ;
+}
+
+/* Input stays transparent so background shows */
+.aa-Autocomplete .aa-Form .aa-Input {
+  background: transparent ;
+  color: #f9fafb ;
+}
+
+.aa-Autocomplete .aa-Form .aa-Input::placeholder {
+  color: #9ca3af;
+}

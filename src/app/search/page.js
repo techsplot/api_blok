@@ -4,16 +4,37 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useMemo } from "react";
 import Link from "next/link";
 import { SearchResults } from "../../components/SearchResults";
-import { apis } from "@/app/lib/mockData";
+import { useStoryblok } from "@/app/lib/StoryblokContext";
 import { ArrowLeft } from "lucide-react";
 
 function SearchResultsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const query = searchParams.get("q") || "";
+  const { storyblokApi, version } = useStoryblok();
+  const [apiData, setApiData] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Fetch APIs from Storyblok
+  useEffect(() => {
+    async function fetchApis() {
+      setLoading(true);
+      try {
+        // Update the path below to match your Storyblok structure
+        const { data } = await storyblokApi.get("cdn/stories/apis", { version });
+        // Assuming each API is a block inside the story content
+        const apis = data.story?.content?.apis || [];
+        setApiData(apis);
+      } catch (err) {
+        console.error("Error fetching Storyblok APIs:", err);
+        setApiData([]);
+      }
+      setLoading(false);
+    }
+    if (storyblokApi) fetchApis();
+  }, [storyblokApi, version]);
 
   const handleApiSelect = (api) => {
-    // Store the API data in sessionStorage to pass to detail page
     sessionStorage.setItem("selectedApi", JSON.stringify(api));
     router.push(`/api/${api.id}`);
   };
@@ -37,7 +58,7 @@ function SearchResultsContent() {
   return (
     <SearchResults
       query={query}
-      data={apis}
+      data={apiData}
       onApiSelect={handleApiSelect}
       onNavigate={handleNavigation}
     />

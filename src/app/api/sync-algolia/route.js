@@ -26,7 +26,7 @@ export async function GET() {
       indexName: "api_docs",    // ✅ index name here
       objects: transformed,     // ✅ your data
     });
-
+ 
     return NextResponse.json({ success: true, count: transformed.length });
   } catch (err) {
     console.error("Algolia Sync Error:", err);
