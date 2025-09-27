@@ -47,7 +47,7 @@ export default function Home() {
 
     const ac = autocomplete({
       container: autocompleteRef.current,
-      placeholder: "Search APIs by name, category, or keyword",
+      placeholder: "Search APIs111 by name, category, or keyword",
       openOnFocus: false, // only show suggestions when typing
       getSources({ query }) {
         return [
@@ -148,7 +148,7 @@ export default function Home() {
       <main className="flex flex-col items-center flex-1 px-6 py-12 mt-40 w-full">
         {/* Search Section */}
         <div className="sticky top-20 z-40 w-full max-w-2xl bg-white pb-6">
-          <h1 className="text-3xl font-medium text-gray-900 mb-6 text-center">Search APIs1!</h1>
+          <h1 className="text-3xl font-medium text-gray-900 mb-6 text-center">Search APIs!</h1>
           <form onSubmit={handleSearch} className="relative flex items-center bg-[#1D2534] rounded-full px-6 py-3 shadow gap-3">
             <div ref={autocompleteRef} className="w-full" />
             <button
