@@ -34,3 +34,14 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+
+# .env
+
+create .env in your root folder and paste this
+
+NEXT_PUBLIC_STORYBLOK_CONTENT_API_ACCESS_TOKEN=your_storyblok_public
+NEXT_PUBLIC_ALGOLIA_APP_ID=you_algolia_public_key
+ALGOLIA_ADMIN_KEY=your_algolia_admin_key
+NEXT_PUBLIC_ALGOLIA_SEARCH_KEY=your_public_algolia_key
