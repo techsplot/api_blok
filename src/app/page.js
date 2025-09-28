@@ -12,7 +12,7 @@ import "@algolia/autocomplete-theme-classic";
 // Initialize Algolia
 
 export default function Home() {
-  const { storyblokApi, version } = useStoryblok();
+  const { storyblokApi, version, cacheVersion } = useStoryblok();
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
@@ -27,19 +27,31 @@ export default function Home() {
   const router = useRouter();
   const autocompleteRef = useRef(null);
 
-  // Fetch Storyblok data
+  // Fetch Storyblok data (list stories under 'apis/' of type 'api_doc')
   useEffect(() => {
     async function fetchData() {
       try {
-        const { data } = await storyblokApi.get("cdn/stories/apis/api_docs", { version });
-        if (data?.story?.content) setApiData(data.story.content);
-        else setApiData(null);
+        const { data } = await storyblokApi.get("cdn/stories", {
+          version,
+          content_type: "api_doc",
+          starts_with: "apis/",
+          per_page: 1,
+          cv: cacheVersion,
+        });
+        const first = data?.stories?.[0]?.content;
+        if (first) {
+          console.log("Success: Fetched from Storyblok (home)");
+          setApiData(first);
+        } else {
+          console.warn("Storyblok: No 'api_doc' stories found under 'apis/'");
+          setApiData(null);
+        }
       } catch (err) {
         console.error("Error fetching Storyblok data:", err);
       }
     }
     if (storyblokApi) fetchData();
-  }, [storyblokApi, version]);
+  }, [storyblokApi, version, cacheVersion]);
 
   // Algolia Autocomplete
   useEffect(() => {
@@ -49,6 +61,7 @@ export default function Home() {
       container: autocompleteRef.current,
       placeholder: "Search APIs by name, category, or keyword",
       openOnFocus: false, // only show suggestions when typing
+      debug: true,
       getSources({ query }) {
         return [
           {
@@ -69,30 +82,47 @@ export default function Home() {
                 ],
               });
             },
+            // Provide a URL for each item so clicks naturally navigate
+            getItemUrl({ item }) {
+              return `/search?q=${encodeURIComponent(item.name)}`;
+            },
             templates: {
               item({ item, components, html }) {
-                return html`<div class="aa-ItemWrapper">
-                  <div class="aa-ItemContent">
-                    <div class="aa-ItemIcon aa-ItemIcon--alignTop">
-                      <img src="${item.image || '/default-icon.png'}" alt="${item.name}" width="50" height="50" />
-                    </div>
-                    <div class="aa-ItemContentBody">
-                      <div class="aa-ItemContentTitle">
-                        ${components.Highlight({ hit: item, attribute: "name" })}
+                // Render as an anchor so clicking always navigates
+                const href = `/search?q=${encodeURIComponent(item.name)}`;
+                return html`<a class="aa-ItemLink" href="${href}">
+                  <div class="aa-ItemWrapper">
+                    <div class="aa-ItemContent">
+                      <div class="aa-ItemIcon aa-ItemIcon--alignTop">
+                        <img src="${item.image || '/default-icon.png'}" alt="${item.name}" width="50" height="50" />
                       </div>
-                      <div class="aa-ItemContentDescription">
-                        ${components.Snippet({ hit: item, attribute: "tag" })}
+                      <div class="aa-ItemContentBody">
+                        <div class="aa-ItemContentTitle">
+                          ${components.Highlight({ hit: item, attribute: "name" })}
+                        </div>
+                        <div class="aa-ItemContentDescription">
+                          ${components.Snippet({ hit: item, attribute: "tag" })}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>`;
+                </a>`;
               },
             },
           },
         ];
       },
       onSelect({ item }) {
-        window.location.href = `/search?q=${encodeURIComponent(item.name)}`;
+        console.log('Autocomplete item selected:', item);
+        // Pass both query and selected item data
+        const searchData = {
+          query: item.name,
+          selectedItem: item,
+          fromAutocomplete: true
+        };
+        sessionStorage.setItem('searchData', JSON.stringify(searchData));
+        // Navigate for keyboard selection or when onSelect fires
+        window.location.assign(`/search?q=${encodeURIComponent(item.name)}`);
       },
     });
 

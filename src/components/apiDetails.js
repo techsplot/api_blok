@@ -5,6 +5,16 @@ export function ApiDetail({ api, onNavigate }) {
 	const [selectedLanguage, setSelectedLanguage] = useState('javascript');
 	const [copied, setCopied] = useState(false);
 
+	// Track which endpoint is selected; default to the first
+	const [activeEndpointIndex, setActiveEndpointIndex] = useState(0);
+
+	// Normalized fields with backward compatibility
+	const title = api.name || api.title || 'API';
+	const endpoints = Array.isArray(api.endpoints) ? api.endpoints : [];
+	const currentEndpoint = endpoints[activeEndpointIndex] || {};
+	const endpointPath = currentEndpoint.path || api.endpoint || api.url || '';
+	const documentationUrl = api.documentation_url || api.base_url || '';
+
 	// Use API's code examples if available, otherwise fallback to default
 	const getCodeExamples = () => {
 			if (api.code_examples && api.code_examples.length > 0) {
@@ -17,21 +27,42 @@ export function ApiDetail({ api, onNavigate }) {
 
 		// Fallback to generated examples
 		return {
-			javascript: `// Initialize the API request\nconst response = await fetch('https://api.example.com${api.url}', {\n  method: '${api.method}',\n  headers: {\n    'Content-Type': 'application/json'${api.authRequired ? ",\n    'Authorization': 'Bearer YOUR_API_KEY'" : ''}\n  }${api.method !== 'GET' ? ',\n  body: JSON.stringify({\n    // Request parameters\n  })' : ''}\n});\n\nconst data = await response.json();\nconsole.log(data);`,
-			python: `import requests\n\n# Set up the request\nurl = "https://api.example.com${api.url}"\nheaders = {\n    "Content-Type": "application/json"${api.authRequired ? ',\n    "Authorization": "Bearer YOUR_API_KEY"' : ''}\n}${api.method !== 'GET' ? `\ndata = {\n    # Request parameters\n}` : ''}\n\n# Make the request\nresponse = requests.${api.method.toLowerCase()}(url, headers=headers${api.method !== 'GET' ? ', json=data' : ''})\nresult = response.json()\nprint(result)`,
-			curl: `curl -X ${api.method} "https://api.example.com${api.url}"${api.authRequired ? ' \\\n  -H "Authorization: Bearer YOUR_API_KEY"' : ''} \\\n  -H "Content-Type: application/json"${api.method !== 'GET' ? ' \\\n  -d \'{\n    "parameter": "value"\n  }\'' : ''}`
+			javascript: `// Initialize the API request\nconst response = await fetch('https://api.example.com${endpointPath}', {\n  method: '${(currentEndpoint.method || api.method || 'GET').toString().toUpperCase()}',\n  headers: {\n    'Content-Type': 'application/json'${api.authRequired ? ",\n    'Authorization': 'Bearer YOUR_API_KEY'" : ''}\n  }${(currentEndpoint.method || api.method) && (currentEndpoint.method || api.method).toString().toUpperCase() !== 'GET' ? ',\n  body: JSON.stringify({\n    // Request parameters\n  })' : ''}\n});\n\nconst data = await response.json();\nconsole.log(data);`,
+			python: `import requests\n\n# Set up the request\nurl = "https://api.example.com${endpointPath}"\nheaders = {\n    "Content-Type": "application/json"${api.authRequired ? ',\n    "Authorization": "Bearer YOUR_API_KEY"' : ''}\n}${(currentEndpoint.method || api.method) && (currentEndpoint.method || api.method).toString().toUpperCase() !== 'GET' ? `\ndata = {\n    # Request parameters\n}` : ''}\n\n# Make the request\nresponse = requests.${(currentEndpoint.method || api.method || 'GET').toString().toLowerCase()}(url, headers=headers${(currentEndpoint.method || api.method) && (currentEndpoint.method || api.method).toString().toUpperCase() !== 'GET' ? ', json=data' : ''})\nresult = response.json()\nprint(result)`,
+			curl: `curl -X ${(currentEndpoint.method || api.method || 'GET').toString().toUpperCase()} "https://api.example.com${endpointPath}"${api.authRequired ? ' \\\n  -H "Authorization: Bearer YOUR_API_KEY"' : ''} \\\n  -H "Content-Type: application/json"${(currentEndpoint.method || api.method) && (currentEndpoint.method || api.method).toString().toUpperCase() !== 'GET' ? ` \\\n  -d '{\n    \"parameter\": \"value\"\n  }'` : ''}`
 		};
 	};
 
 	const codeExamples = getCodeExamples();
 
-		const handleCopy = async (text) => {
+	const copyToClipboard = async (text) => {
 		try {
-			await navigator.clipboard.writeText(text);
+			if (navigator.clipboard && window.isSecureContext) {
+				await navigator.clipboard.writeText(text);
+				return true;
+			}
+			// Fallback
+			const textarea = document.createElement('textarea');
+			textarea.value = text;
+			textarea.style.position = 'fixed';
+			textarea.style.left = '-9999px';
+			document.body.appendChild(textarea);
+			textarea.focus();
+			textarea.select();
+			const success = document.execCommand('copy');
+			document.body.removeChild(textarea);
+			return success;
+		} catch (e) {
+			console.error('Copy failed', e);
+			return false;
+		}
+	};
+
+	const handleCopy = async (text) => {
+		const ok = await copyToClipboard(text);
+		if (ok) {
 			setCopied(true);
 			setTimeout(() => setCopied(false), 2000);
-		} catch (err) {
-			console.error('Failed to copy:', err);
 		}
 	};
 
@@ -54,7 +85,7 @@ export function ApiDetail({ api, onNavigate }) {
 							<ArrowLeft className="w-5 h-5" />
 						</button>
 						<div>
-							<h1 className="text-2xl font-medium">{api.title}</h1>
+							<h1 className="text-2xl font-medium">{title}</h1>
 							<p className="text-gray-600">{api.description}</p>
 						</div>
 					</div>
@@ -75,15 +106,15 @@ export function ApiDetail({ api, onNavigate }) {
 						<div className="bg-white border border-gray-200 rounded-lg p-6">
 							<div className="flex items-center gap-4 mb-4">
 								<span className={`px-3 py-1 rounded-md font-medium ${
-									api.method === 'GET' ? 'bg-blue-50 text-blue-600' :
-									api.method === 'POST' ? 'bg-green-50 text-green-600' :
-									api.method === 'PUT' ? 'bg-yellow-50 text-yellow-600' :
+									(currentEndpoint.method || 'GET') === 'GET' ? 'bg-blue-50 text-blue-600' :
+									(currentEndpoint.method || '') === 'POST' ? 'bg-green-50 text-green-600' :
+									(currentEndpoint.method || '') === 'PUT' ? 'bg-yellow-50 text-yellow-600' :
 									'bg-red-50 text-red-600'
 								}`}>
-									{api.method}
+									{(currentEndpoint.method || 'GET')}
 								</span>
 								<code className="bg-gray-100 px-3 py-1 rounded-md font-mono text-sm">
-									{api.url}
+									{endpointPath}
 								</code>
 								{api.authRequired && (
 									<div className="flex items-center gap-1 text-orange-600">
@@ -94,6 +125,40 @@ export function ApiDetail({ api, onNavigate }) {
 							</div>
 							<p className="text-gray-600">{api.description}</p>
 						</div>
+
+						{/* Endpoints list and selector */}
+						{endpoints.length > 1 && (
+							<div className="bg-white border border-gray-200 rounded-lg p-6">
+								<h3 className="font-medium mb-3">Endpoints</h3>
+								<div className="flex flex-col gap-2">
+									{endpoints.map((ep, idx) => (
+										<button
+											key={`${ep.method}-${ep.path}-${idx}`}
+											onClick={() => setActiveEndpointIndex(idx)}
+											className={`flex items-center justify-between w-full text-left px-3 py-2 rounded border ${
+												activeEndpointIndex === idx ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+											}`}
+										>
+											<div className="flex items-center gap-3">
+												<span className={`text-xs px-2 py-1 rounded ${
+													(ep.method || 'GET') === 'GET' ? 'text-blue-600 bg-blue-100' :
+													(ep.method || '') === 'POST' ? 'text-green-600 bg-green-100' :
+													(ep.method || '') === 'PUT' ? 'text-yellow-600 bg-yellow-100' :
+													'text-red-600 bg-red-100'
+												}`}>{ep.method || 'GET'}</span>
+												<code className="text-sm text-gray-700">{ep.path || '/'}</code>
+											</div>
+											<button
+												onClick={(e) => { e.stopPropagation(); handleCopy(`${(ep.method || 'GET').toString().toUpperCase()} ${ep.path || '/'}`); }}
+												className="text-xs text-blue-600 hover:text-blue-700 underline"
+											>
+												Copy
+											</button>
+										</button>
+									))}
+								</div>
+							</div>
+						)}
 
 						{/* Tabs */}
 						<div className="bg-white border border-gray-200 rounded-lg">
@@ -326,10 +391,10 @@ export function ApiDetail({ api, onNavigate }) {
 								)}
 							</div>
 							{/* Documentation Link */}
-							{api.documentation_url && (
+							{documentationUrl && (
 								<div className="mt-4 pt-4 border-t border-gray-200">
 									<a
-										href={api.documentation_url}
+										href={documentationUrl}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="text-blue-600 hover:text-blue-700 text-sm underline"

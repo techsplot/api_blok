@@ -13,9 +13,14 @@ export async function GET() {
     const storyblokApi = getStoryblokApi();
 
     // 1. Fetch Storyblok data
+    const { data: space } = await storyblokApi.get("cdn/spaces/me");
+    const cv = space?.space?.version;
     const { data } = await storyblokApi.get("cdn/stories", {
       version: "published",
       content_type: "api_doc",
+      starts_with: "apis/",
+      cv,
+      per_page: 100,
     });
 
     // 2. Transform for Algolia

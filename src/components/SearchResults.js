@@ -115,22 +115,8 @@ export function SearchResults({ query, data, onApiSelect, onNavigate }) {
 		filter !== undefined && (Array.isArray(filter) ? filter.length > 0 : true)
 	);
 
-	// Simple highlight function
-	const renderHighlightedText = (text) => {
-		if (!query) return text;
-		const parts = text.split(new RegExp(`(${query})`, 'gi'));
-		return (
-			<>
-				{parts.map((part, i) =>
-					part.toLowerCase() === query.toLowerCase() ? (
-						<span key={i} className="bg-yellow-200">{part}</span>
-					) : (
-						part
-					)
-				)}
-			</>
-		);
-	};
+	// Render text without background highlight
+	const renderHighlightedText = (text) => text;
 
 	return (
 		<div className="min-h-screen bg-white">
