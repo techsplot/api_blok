@@ -1,7 +1,9 @@
-import { useState, useRef, useEffect } from 'react';
+'use client';
+
+import React, { useState, useRef, useEffect } from 'react';
 import { ArrowLeft, Send, Mic, Volume2, Code, Copy, CheckCircle, User, Bot, Lightbulb, Rocket, Settings } from 'lucide-react';
 
-export function AiChat({ onNavigate }) {
+export function AiChat({ onNavigate, apiDoc }) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -11,45 +13,32 @@ export function AiChat({ onNavigate }) {
   const messagesEndRef = useRef(null);
 
   const onboardingQuestions = [
-    {
-      question: "Hi! I'm your AI development assistant. I'm here to help you understand, integrate, and build with APIs from start to finish. Let's start by getting to know your project better.\n\nWhat type of project are you working on?",
-      options: ["Web Application", "Mobile App", "Backend/API", "E-commerce Store", "SaaS Platform", "Other"]
-    },
-    {
-      question: "Great! What's your primary tech stack or programming language?",
-      options: ["JavaScript/Node.js", "Python", "React/Next.js", "PHP", "Java", "C#/.NET", "Ruby", "Go", "Other"]
-    },
-    {
-      question: "How would you describe your API integration experience?",
-      options: ["Beginner - New to APIs", "Intermediate - Some experience", "Advanced - Very experienced", "Expert - I build APIs"]
-    },
-    {
-      question: "What's your main goal today?",
-      options: ["Find the right API", "Understand API documentation", "Get help with integration", "Debug existing code", "Build from scratch", "Learn best practices"]
-    }
+    { question: "Hi! I'm your AI development assistant, ready to help you with APIs. To start, what type of project are you building?", options: ["Web Application", "Mobile App", "Backend/API", "E-commerce Store", "SaaS Platform", "Other"] },
+    { question: "Great! What's your primary tech stack or programming language?", options: ["JavaScript/Node.js", "Python", "React/Next.js", "PHP", "Java", "C#/.NET", "Ruby", "Go", "Other"] },
+    { question: "How would you describe your API integration experience?", options: ["Beginner - New to APIs", "Intermediate - Some experience", "Advanced - Very experienced"] },
+    { question: "Finally, what's your main goal today?", options: ["Understand API docs", "Get help with integration", "Debug existing code", "Build from scratch", "Learn best practices"] }
   ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+  useEffect(scrollToBottom, [messages]);
 
   useEffect(() => {
-    if (messages.length === 0) {
-      setTimeout(() => {
-        const welcomeMessage = {
-          id: Date.now().toString(),
-          content: onboardingQuestions[0].question,
-          isUser: false,
-          timestamp: new Date(),
-          type: 'onboarding'
-        };
-        setMessages([welcomeMessage]);
-      }, 500);
-    }
+    const initialMessageContent = apiDoc 
+      ? `I see you're looking at the **${apiDoc.name}** documentation. I'm ready to answer any questions you have about it.\n\nBut first, let's personalize your experience.`
+      : `Welcome! Let's start by getting to know you and your project.`;
+
+    const welcomeMessage = {
+      id: Date.now().toString(),
+      content: `${initialMessageContent}\n\n${onboardingQuestions[0].question}`,
+      isUser: false,
+      timestamp: new Date(),
+      type: 'onboarding',
+    };
+    setMessages([welcomeMessage]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCopy = async (text, messageId) => {
@@ -63,158 +52,117 @@ export function AiChat({ onNavigate }) {
   };
 
   const handleOnboardingResponse = (answer) => {
-    const userMessage = {
-      id: Date.now().toString(),
-      content: answer,
-      isUser: true,
-      timestamp: new Date(),
-      type: 'onboarding'
-    };
+    const userMessage = { id: (Date.now() + 1).toString(), content: answer, isUser: true, timestamp: new Date(), type: 'onboarding' };
     setMessages(prev => [...prev, userMessage]);
-    const newProfile = { ...userProfile };
-    switch (currentOnboardingStep) {
-      case 0:
-        newProfile.projectType = answer;
-        break;
-      case 1:
-        newProfile.techStack = [answer];
-        break;
-      case 2:
-        newProfile.experience = answer;
-        break;
-      case 3:
-        newProfile.currentGoal = answer;
-        break;
+
+    // This state update needs to be captured for the final step.
+    const updatedProfileFields = {};
+     switch (currentOnboardingStep) {
+        case 0: updatedProfileFields.projectType = answer; break;
+        case 1: updatedProfileFields.techStack = [answer]; break;
+        case 2: updatedProfileFields.experience = answer; break;
+        case 3: updatedProfileFields.currentGoal = answer; break;
     }
+    setUserProfile(prev => ({...prev, ...updatedProfileFields}));
+
+
     setIsTyping(true);
     setTimeout(() => {
-      let nextMessage;
       if (currentOnboardingStep < onboardingQuestions.length - 1) {
         const nextStep = currentOnboardingStep + 1;
         setCurrentOnboardingStep(nextStep);
-        nextMessage = {
-          id: Date.now().toString(),
-          content: onboardingQuestions[nextStep].question,
-          isUser: false,
-          timestamp: new Date(),
-          type: 'onboarding'
-        };
+        const nextMessage = { id: Date.now().toString(), content: onboardingQuestions[nextStep].question, isUser: false, timestamp: new Date(), type: 'onboarding' };
+        setMessages(prev => [...prev, nextMessage]);
+        setIsTyping(false);
       } else {
-        newProfile.hasAnsweredOnboarding = true;
-        setUserProfile(newProfile);
-        const personalizedWelcome = generatePersonalizedWelcome(newProfile);
-        nextMessage = {
-          id: Date.now().toString(),
-          content: personalizedWelcome,
-          isUser: false,
-          timestamp: new Date(),
-          type: 'guidance'
-        };
+        // Final step of onboarding
+        setUserProfile(prev => {
+            const finalProfile = {...prev, ...updatedProfileFields, hasAnsweredOnboarding: true };
+            const personalizedWelcome = generatePersonalizedWelcome(finalProfile);
+            const nextMessage = { id: Date.now().toString(), content: personalizedWelcome, isUser: false, timestamp: new Date(), type: 'guidance' };
+            setMessages(prevMsgs => [...prevMsgs, nextMessage]);
+            setIsTyping(false);
+            return finalProfile;
+        });
       }
-      setMessages(prev => [...prev, nextMessage]);
-      setIsTyping(false);
-    }, 1500);
+    }, 1200);
   };
 
   const generatePersonalizedWelcome = (profile) => {
-    const projectType = profile.projectType?.toLowerCase() || 'project';
-    const techStack = profile.techStack?.[0] || 'your tech stack';
-    const experience = profile.experience?.toLowerCase() || 'your level';
-    const goal = profile.currentGoal?.toLowerCase() || 'your goals';
-    return `Perfect! Now I understand your ${projectType} project using ${techStack}. Based on your ${experience} experience level and your goal to ${goal}, I'm ready to provide you with personalized assistance.\n\nHere's how I can help you:\n\n🎯 **Smart API Recommendations** - I'll suggest APIs that fit your ${projectType} and ${techStack} setup\n📚 **Contextual Documentation** - I'll explain API docs in terms that match your experience level\n🔧 **Custom Code Examples** - All code examples will be tailored to ${techStack}\n🚀 **Step-by-Step Guidance** - From API discovery to production deployment\n🐛 **Debug & Troubleshoot** - Help you solve integration issues quickly\n📖 **Best Practices** - Share industry standards for your specific stack\n\nWhat would you like to start with? I can help you find the right API, understand documentation, write integration code, or anything else related to your project!`;
+    return `Perfect! I'm now set up to help with your **${profile.projectType}** using **${profile.techStack?.[0]}**. I'll tailor my answers to your **${profile.experience}** level.\n\nHow can I help you with the **${apiDoc?.name || 'API'}** documentation? Feel free to ask anything!`;
   };
 
-  const generateContextualResponse = (userMessage) => {
-    const lowerMessage = userMessage.toLowerCase();
-    const { projectType, techStack, experience, currentGoal } = userProfile;
-    const primaryTech = techStack?.[0] || 'JavaScript';
-    // Payment-related queries
-    if (lowerMessage.includes('payment') || lowerMessage.includes('stripe') || lowerMessage.includes('billing')) {
-      const experienceLevel = experience?.includes('Beginner') ? 'beginner' : 
-                             experience?.includes('Intermediate') ? 'intermediate' : 'advanced';
-      let responseContent = `Great choice! For ${projectType} projects, Stripe is the gold standard for payments. Given your ${experience} level with ${primaryTech}, here's what I recommend:\n\n`;
-      if (experienceLevel === 'beginner') {
-        responseContent += `**Getting Started:**\n1. Create a Stripe account and get your API keys\n2. Install the Stripe SDK for ${primaryTech}\n3. Start with a simple payment form\n\n`;
-      }
-      responseContent += `Here's a ${primaryTech}-specific example for your ${projectType}:`;
-      let codeExample = '';
-      if (primaryTech.includes('JavaScript') || primaryTech.includes('Node')) {
-        codeExample = `// Install: npm install stripe\nconst stripe = require('stripe')(\'sk_test_...\');\n// Create a payment intent\nconst paymentIntent = await stripe.paymentIntents.create({\n  amount: 2000, // $20.00\n  currency: 'usd',\n  payment_method_types: ['card'],\n  metadata: {\n    project_type: '${projectType}',\n    integration_id: 'your_project_id'\n  }\n});\n\nconsole.log('Payment intent created:', paymentIntent.client_secret);`;
-      } else if (primaryTech.includes('Python')) {
-        codeExample = `# Install: pip install stripe\nimport stripe\n\nstripe.api_key = \"sk_test_...\"\n\n# Create a payment intent\npayment_intent = stripe.PaymentIntent.create(\n    amount=2000,  # $20.00\n    currency='usd',\n    payment_method_types=['card'],\n    metadata={\n        'project_type': '${projectType}',\n        'integration_id': 'your_project_id'\n    }\n)\n\nprint(f\"Payment intent created: {payment_intent.client_secret}\")`;
-      } else {
-        codeExample = `// Generic REST API call for ${primaryTech}\nPOST https://api.stripe.com/v1/payment_intents\nAuthorization: Bearer sk_test_...\nContent-Type: application/x-www-form-urlencoded\n\namount=2000&currency=usd&payment_method_types[]=card`;
-      }
-      return {
-        id: Date.now().toString(),
-        content: responseContent,
-        isUser: false,
-        timestamp: new Date(),
-        hasCode: true,
-        codeExample,
-        type: 'guidance'
-      };
-    }
-    // Authentication queries
-    if (lowerMessage.includes('auth') || lowerMessage.includes('login') || lowerMessage.includes('user')) {
-      let responseContent = `For ${projectType} authentication with ${primaryTech}, I recommend these options based on your needs:\n\n`;
-      if (projectType?.includes('Web') || projectType?.includes('SaaS')) {
-        responseContent += `**Auth0** - Perfect for ${projectType}, handles everything\n**Firebase Auth** - Great for rapid development\n**Supabase Auth** - Open-source alternative\n\n`;
-      }
-      responseContent += `Here's a ${primaryTech} implementation:`;
-      const codeExample = primaryTech.includes('React') ? 
-        `// Firebase Auth with React\nimport { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';\nimport { auth } from './firebase-config';\n\nconst signIn = async (email, password) => {\n  try {\n    const userCredential = await signInWithEmailAndPassword(auth, email, password);\n    console.log('User signed in:', userCredential.user.uid);\n    // Perfect for your ${projectType} project\n  } catch (error) {\n    console.error('Sign in error:', error.message);\n  }\n};` :
-        `// Authentication example for ${primaryTech}\n// This code is optimized for your ${projectType} project\nconst authenticate = async (email, password) => {\n  const response = await fetch('/api/auth/login', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({ email, password })\n  });\n  \n  if (response.ok) {\n    const { token } = await response.json();\n    localStorage.setItem('authToken', token);\n    return token;\n  }\n  throw new Error('Authentication failed');\n};`;
-      return {
-        id: Date.now().toString(),
-        content: responseContent,
-        isUser: false,
-        timestamp: new Date(),
-        hasCode: true,
-        codeExample,
-        type: 'guidance'
-      };
-    }
-    // Help with integration
-    if (lowerMessage.includes('integrate') || lowerMessage.includes('implement') || lowerMessage.includes('build')) {
-      return {
-        id: Date.now().toString(),
-        content: `Perfect! Let's build this step by step for your ${projectType} using ${primaryTech}. Based on your ${experience} level, here's my recommended approach:\n\n**Phase 1: Setup & Planning**\n• Environment setup for ${primaryTech}\n• API key management and security\n• Project structure best practices\n\n**Phase 2: Core Integration**\n• API client setup\n• Authentication handling\n• Error handling and retries\n\n**Phase 3: Testing & Deployment**\n• Testing strategies for your ${projectType}\n• Production deployment checklist\n• Monitoring and logging\n\nWhich phase would you like to dive into first? Or do you have a specific API you'd like to integrate?`,
-        isUser: false,
-        timestamp: new Date(),
-        type: 'guidance'
-      };
-    }
-    // Default contextual response
-    return {
-      id: Date.now().toString(),
-      content: `I'd love to help you with that! Given your ${projectType} project using ${primaryTech} and your goal to ${currentGoal}, I can provide specific guidance.\n\nCould you tell me more about:\n• Which specific API you're interested in?\n• What functionality you're trying to implement?\n• Any challenges you're currently facing?\n\nThe more context you give me, the better I can tailor my assistance to your ${experience} level and ${primaryTech} setup.`,
-      isUser: false,
-      timestamp: new Date(),
-      type: 'message'
-    };
-  };
-
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-    const userMessage = {
-      id: Date.now().toString(),
-      content: inputValue,
-      isUser: true,
-      timestamp: new Date(),
-    };
+    const userMessage = { id: Date.now().toString(), content: inputValue, isUser: true, timestamp: new Date() };
     setMessages(prev => [...prev, userMessage]);
+    const currentInput = inputValue;
     setInputValue('');
     setIsTyping(true);
-    setTimeout(() => {
-      const aiResponse = userProfile.hasAnsweredOnboarding 
-        ? generateContextualResponse(inputValue)
-        : generateContextualResponse(inputValue);
-      setMessages(prev => [...prev, aiResponse]);
-      setIsTyping(false);
-    }, 1500);
-  };
 
+    try {
+      // First, check if the question is relevant via API route
+      const relevanceResponse = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'checkRelevance', question: currentInput, apiDoc: apiDoc })
+      });
+
+      if (!relevanceResponse.ok) throw new Error('Relevance check failed');
+      const { relevant } = await relevanceResponse.json();
+
+      if (!relevant) {
+        const aiResponse = {
+          id: (Date.now() + 1).toString(),
+          content: `I'm sorry, but my expertise is focused on the **${apiDoc.name}** documentation. Could you please ask a question related to its features, endpoints, or usage?`,
+          isUser: false,
+          timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, aiResponse]);
+        setIsTyping(false);
+        return;
+      }
+
+      // If relevant, proceed to get a detailed answer
+      let prompt = currentInput;
+      if (apiDoc) {
+        const docString = JSON.stringify(apiDoc, null, 2);
+        prompt = `CONTEXT: I am a developer reviewing the following API documentation. Please answer my question based on this context and my user profile.\n\n---\n\nAPI DOCUMENTATION:\n\`\`\`json\n${docString}\n\`\`\`\n\n---\n\nMY QUESTION:\n${currentInput}`;
+      }
+
+      const chatResponse = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'getChatResponse', prompt: prompt, userProfile: userProfile })
+      });
+
+      if (!chatResponse.ok) throw new Error('Chat response failed');
+      const { response: aiTextResponse } = await chatResponse.json();
+
+      const hasCode = aiTextResponse.includes('```');
+      const aiResponse = {
+        id: (Date.now() + 1).toString(),
+        content: aiTextResponse,
+        isUser: false,
+        timestamp: new Date(),
+        hasCode: hasCode,
+        codeExample: hasCode ? aiTextResponse.split('```')[1]?.split('\n').slice(1).join('\n').trim() : undefined
+      };
+      setMessages(prev => [...prev, aiResponse]);
+    } catch (error) {
+        console.error("Failed to fetch from /api/chat:", error);
+        const errorResponse = {
+            id: (Date.now() + 1).toString(),
+            content: "Sorry, I'm having trouble connecting to my brain right now. Please try again in a moment.",
+            isUser: false,
+            timestamp: new Date(),
+        };
+        setMessages(prev => [...prev, errorResponse]);
+    } finally {
+      setIsTyping(false);
+    }
+  };
+  
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -222,212 +170,94 @@ export function AiChat({ onNavigate }) {
     }
   };
 
-  const isOnboarding = !userProfile.hasAnsweredOnboarding && currentOnboardingStep < onboardingQuestions.length;
+  const isOnboarding = !userProfile.hasAnsweredOnboarding;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
+    <div className="h-screen bg-white flex flex-col">
+        <div className="bg-white border-b border-gray-200 px-6 py-4 flex-shrink-0">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => onNavigate('home')}
+              onClick={() => onNavigate('search')}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
             </button>
             <div>
-              <h1 className="text-2xl font-medium">AI Development Assistant</h1>
-              <p className="text-gray-600">
-                {userProfile.hasAnsweredOnboarding 
-                  ? `Helping with your ${userProfile.projectType} using ${userProfile.techStack?.[0]}`
-                  : "Getting to know your project"}
+              <h1 className="text-xl font-medium">AI Development Assistant</h1>
+              <p className="text-sm text-gray-600">
+                {apiDoc ? `Context: ${apiDoc.name}` : 'Ready to help'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" title="AI is online"></div>
-            {userProfile.hasAnsweredOnboarding && (
-              <Bot className="w-6 h-6 text-blue-500" />
-            )}
+            <div
+              className="w-3 h-3 bg-green-400 rounded-full animate-pulse"
+              title="AI is online"
+            ></div>
+            <Bot className="w-6 h-6 text-blue-500" />
           </div>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-8">
+      <div className="flex-1 overflow-y-auto px-6 py-8 bg-gray-50/50">
         <div className="max-w-4xl mx-auto space-y-6">
           {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-            >
+            <div key={message.id} className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}>
               <div className={`flex gap-3 max-w-3xl ${message.isUser ? 'flex-row-reverse' : 'flex-row'}`}>
-                {/* Avatar */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  message.isUser 
-                    ? 'bg-gradient-to-r from-[#4FACFE] to-[#00F2FE]' 
-                    : 'bg-gray-100'
-                }`}>
-                  {message.isUser ? (
-                    <User className="w-4 h-4 text-white" />
-                  ) : (
-                    <Bot className="w-4 h-4 text-gray-600" />
-                  )}
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${message.isUser ? 'bg-gradient-to-r from-[#4FACFE] to-[#00F2FE]' : 'bg-gray-200'}`}>
+                  {message.isUser ? <User className="w-4 h-4 text-white" /> : <Bot className="w-4 h-4 text-gray-700" />}
                 </div>
-
-                {/* Message Content */}
-                <div
-                  className={`rounded-lg px-4 py-3 ${
-                    message.isUser
-                      ? 'bg-gradient-to-r from-[#4FACFE] to-[#00F2FE] text-white'
-                      : 'bg-gray-50 text-gray-900'
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
+                <div className={`rounded-xl px-4 py-3 shadow-sm ${message.isUser ? 'bg-gradient-to-r from-[#4FACFE] to-[#00F2FE] text-white' : 'bg-white text-gray-900'}`}>
+                   <div
+                    className="prose prose-sm max-w-none"
+                    dangerouslySetInnerHTML={{
+                      __html: message.content
+                        .replace(/```(.*?)\n([\s\S]*?)```/gs, (match, lang, code) => {
+                           // Basic sanitization
+                          const safeCode = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                          return `<pre class="bg-gray-800 text-white p-3 rounded-md my-2 overflow-x-auto"><code>${safeCode}</code></pre>`;
+                        })
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\n/g, '<br />'),
+                    }}
+                  ></div>
+                  
                   {message.hasCode && message.codeExample && (
-                    <div className="mt-4 bg-gray-900 rounded-lg overflow-hidden">
-                      <div className="flex items-center justify-between px-4 py-2 bg-gray-800">
-                        <div className="flex items-center gap-2">
-                          <Code className="w-4 h-4 text-gray-400" />
-                          <span className="text-sm text-gray-300">Code Example</span>
-                        </div>
-                        <button
-                          onClick={() => handleCopy(message.codeExample, message.id)}
-                          className="p-1 hover:bg-gray-700 rounded transition-colors"
-                        >
-                          {copied === message.id ? (
-                            <CheckCircle className="w-4 h-4 text-green-400" />
-                          ) : (
-                            <Copy className="w-4 h-4 text-gray-400" />
-                          )}
-                        </button>
-                      </div>
-                      <pre className="p-4 text-sm text-gray-100 overflow-x-auto">
-                        <code>{message.codeExample}</code>
-                      </pre>
+                     <div className="mt-4 bg-gray-900 rounded-lg overflow-hidden">
+                      <div className="flex items-center justify-between px-4 py-2 bg-gray-800"><div className="flex items-center gap-2"><Code className="w-4 h-4 text-gray-400" /><span className="text-sm text-gray-300">Code Snippet</span></div><button onClick={() => handleCopy(message.codeExample || '', message.id)} className="p-1 hover:bg-gray-700 rounded transition-colors">{copied === message.id ? <CheckCircle className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4 text-gray-400" />}</button></div>
+                      <pre className="p-4 text-sm text-gray-100 overflow-x-auto"><code>{message.codeExample}</code></pre>
                     </div>
                   )}
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs opacity-70">
-                      {message.timestamp.toLocaleTimeString()}
-                    </span>
-                    {!message.isUser && (
-                      <button className="p-1 opacity-70 hover:opacity-100 transition-opacity">
-                        <Volume2 className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
+                  <div className="flex items-center justify-between mt-2"><span className="text-xs opacity-70">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span></div>
                 </div>
               </div>
             </div>
           ))}
           {isTyping && (
-            <div className="flex justify-start">
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-gray-600" />
-                </div>
-                <div className="bg-gray-50 rounded-lg px-4 py-3">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <div className="flex justify-start"><div className="flex gap-3"><div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0"><Bot className="w-4 h-4 text-gray-700" /></div><div className="bg-white rounded-xl px-4 py-3 shadow-sm"><div className="flex space-x-1"><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div><div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div></div></div></div></div>
           )}
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Onboarding Options */}
-      {isOnboarding && currentOnboardingStep < onboardingQuestions.length && (
-        <div className="px-6 pb-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {onboardingQuestions[currentOnboardingStep].options.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => handleOnboardingResponse(option)}
-                  className="p-3 bg-gradient-to-r from-[#4FACFE] to-[#00F2FE] text-white rounded-lg hover:opacity-90 transition-opacity text-left"
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
+      {isOnboarding && (
+        <div className="px-6 pb-4 pt-2 bg-white border-t border-gray-100">
+          <div className="max-w-4xl mx-auto"><div className="grid grid-cols-2 md:grid-cols-3 gap-3">{onboardingQuestions[currentOnboardingStep].options.map((option) => (<button key={option} onClick={() => handleOnboardingResponse(option)} className="p-3 bg-white border border-gray-200 hover:border-blue-500 hover:bg-blue-50 text-gray-800 rounded-lg transition-all text-left text-sm">{option}</button>))}</div></div>
         </div>
       )}
 
-      {/* Quick Actions for Post-Onboarding */}
-      {userProfile.hasAnsweredOnboarding && messages.length <= 2 && (
-        <div className="px-6 pb-4">
-          <div className="max-w-4xl mx-auto">
-            <p className="text-sm text-gray-500 mb-3">Quick actions for your {userProfile.projectType}:</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <button
-                onClick={() => setInputValue("Show me payment integration options")}
-                className="flex items-center gap-2 p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-left transition-colors"
-              >
-                <Rocket className="w-4 h-4 text-blue-600" />
-                <span>Payment Integration</span>
-              </button>
-              <button
-                onClick={() => setInputValue("Help me set up authentication")}
-                className="flex items-center gap-2 p-3 bg-green-50 hover:bg-green-100 rounded-lg text-left transition-colors"
-              >
-                <Settings className="w-4 h-4 text-green-600" />
-                <span>Authentication Setup</span>
-              </button>
-              <button
-                onClick={() => setInputValue("I need help with API documentation")}
-                className="flex items-center gap-2 p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-left transition-colors"
-              >
-                <Lightbulb className="w-4 h-4 text-purple-600" />
-                <span>Understand Documentation</span>
-              </button>
-              <button
-                onClick={() => setInputValue("Guide me through the integration process")}
-                className="flex items-center gap-2 p-3 bg-orange-50 hover:bg-orange-100 rounded-lg text-left transition-colors"
-              >
-                <Code className="w-4 h-4 text-orange-600" />
-                <span>Step-by-Step Integration</span>
-              </button>
-            </div>
-          </div>
-        </div>
+      {!isOnboarding && messages.length < 5 && (
+        <div className="px-6 pb-4 pt-2 bg-white border-t border-gray-100"><div className="max-w-4xl mx-auto"><p className="text-sm text-gray-500 mb-2">Here are some ideas for your {userProfile.projectType}:</p><div className="grid grid-cols-2 md:grid-cols-2 gap-3"><button onClick={() => setInputValue(`How do I handle authentication with the ${apiDoc?.name}?`)} className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-left text-sm transition-colors"><Settings className="w-4 h-4 text-green-600 flex-shrink-0" /><span>Authentication Setup</span></button><button onClick={() => setInputValue(`Give me a code example for a basic charge using ${apiDoc?.name}.`)} className="flex items-center gap-2 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg text-left text-sm transition-colors"><Rocket className="w-4 h-4 text-blue-600 flex-shrink-0" /><span>Core Integration Example</span></button></div></div></div>
       )}
 
-      {/* Input */}
-      <div className="border-t border-gray-200 px-6 py-4 flex-shrink-0">
+      <div className="border-t border-gray-200 px-6 py-4 bg-white">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-end gap-4">
+          <div className="flex items-center gap-4">
             <div className="flex-1 relative">
-              <textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder={isOnboarding 
-                  ? "Or type your own answer..." 
-                  : "Ask me anything about your project, APIs, or integration help..."}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                rows={1}
-                style={{ minHeight: '48px', maxHeight: '120px' }}
-                disabled={isOnboarding}
-              />
+              <textarea value={inputValue} onChange={(e) => setInputValue(e.target.value)} onKeyDown={handleKeyPress} placeholder={isOnboarding ? "Select an option above to continue..." : `Ask about ${apiDoc?.name || 'the API'}...`} className="w-full pl-4 pr-12 py-3 border border-gray-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100" rows={1} style={{ minHeight: '48px', maxHeight: '120px' }} disabled={isOnboarding || isTyping}/>
+               <button onClick={handleSendMessage} disabled={!inputValue.trim() || isOnboarding || isTyping} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-gradient-to-r from-[#4FACFE] to-[#00F2FE] text-white rounded-md hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"><Send className="w-5 h-5" /></button>
             </div>
-            <button className="p-3 text-gray-400 hover:text-gray-600 transition-colors">
-              <Mic className="w-5 h-5" />
-            </button>
-            <button
-              onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isOnboarding}
-              className="p-3 bg-gradient-to-r from-[#4FACFE] to-[#00F2FE] text-white rounded-lg hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Send className="w-5 h-5" />
-            </button>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+// src/app/chat/page.js
 "use client";
 
 import { useRouter } from 'next/navigation';
