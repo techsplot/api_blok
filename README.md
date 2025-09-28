@@ -45,3 +45,4 @@ NEXT_PUBLIC_STORYBLOK_CONTENT_API_ACCESS_TOKEN=your_storyblok_public
 NEXT_PUBLIC_ALGOLIA_APP_ID=you_algolia_public_key
 ALGOLIA_ADMIN_KEY=your_algolia_admin_key
 NEXT_PUBLIC_ALGOLIA_SEARCH_KEY=your_public_algolia_key
+API_KEY= google_gemini_api_key
