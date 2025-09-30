@@ -8,11 +8,18 @@ export default function ChatPage() {
 
   const handleNavigation = (screen) => {
     switch (screen) {
+      case 'back':
+        // Go back step by step (typically to API details page)
+        router.back();
+        break;
       case 'home':
         router.push('/');
         break;
       case 'search':
         router.push('/search');
+        break;
+      case 'api_details':
+        router.push('/api/[slug]');
         break;
       case 'settings':
         router.push('/settings');

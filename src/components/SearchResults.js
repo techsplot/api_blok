@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
 import { ArrowLeft, Search, Filter, Code, Shield, Zap, X } from 'lucide-react';
+import { SearchLoadingScreen, SearchResultsSkeletonList } from './LoadingComponents';
 
-export function SearchResults({ query, data, onApiSelect, onNavigate }) {
+export function SearchResults({ query, data, loading = false, onApiSelect, onNavigate }) {
 	const [filters, setFilters] = useState({});
 	const [showFilters, setShowFilters] = useState(false);
 	const [currentPage, setCurrentPage] = useState(0);
@@ -134,8 +135,17 @@ export function SearchResults({ query, data, onApiSelect, onNavigate }) {
 							<div>
 								<h1 className="text-2xl font-medium">Search Results</h1>
 								<div className="text-gray-500 flex items-center gap-2">
-									<span>{totalHits} result{totalHits !== 1 ? 's' : ''}</span>
-									{query && <span>for "{query}"</span>}
+									{loading ? (
+										<span className="flex items-center gap-2">
+											<div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+											Searching...
+										</span>
+									) : (
+										<>
+											<span>{totalHits} result{totalHits !== 1 ? 's' : ''}</span>
+											{query && <span>for "{query}"</span>}
+										</>
+									)}
 								</div>
 							</div>
 						</div>
@@ -354,7 +364,9 @@ export function SearchResults({ query, data, onApiSelect, onNavigate }) {
 					</div>
 					{/* Results */}
 					<div className="flex-1">
-						{paginatedResults.length === 0 ? (
+						{loading ? (
+							<SearchLoadingScreen query={query} />
+						) : paginatedResults.length === 0 ? (
 							<div className="text-center py-12">
 								<Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
 								<h3 className="text-xl font-medium text-gray-500 mb-2">No APIs found</h3>

@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useEffect } from "react";
-import { getStoryblokApi } from "@/app/lib/storyblok"; // This is your existing RSC setup
+import { getStoryblokApi } from "./storyblok"; // This is your existing RSC setup
 
 const StoryblokContext = createContext(null);
 
@@ -35,8 +35,19 @@ export function StoryblokContextProvider({ children }) {
         const { data } = await storyblokApi.get("cdn/spaces/me");
         if (!cancelled) setCacheVersion(data?.space?.version);
       } catch (e) {
-        // non-fatal; keep old cv
-        console.warn("Storyblok: failed to fetch space version (cv)", e?.message || e);
+        // Enhanced error logging for debugging
+        const errorInfo = {
+          message: e?.message,
+          status: e?.response?.status,
+          statusText: e?.response?.statusText,
+          responseData: e?.response?.data,
+        };
+        console.warn("Storyblok: failed to fetch space version (cv)", errorInfo);
+        
+        // If this is an auth error, it might indicate missing or invalid token
+        if (e?.response?.status === 401) {
+          console.error("Storyblok authentication failed. Check your access token.");
+        }
       }
     };
 

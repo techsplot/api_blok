@@ -1,11 +1,17 @@
 {
-  "name": "my-app",
-  "version": "0.1.0",
+  "name": "api-blok",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {
     "@algolia/autocomplete-js": "^1.19.4",
@@ -22,5 +28,14 @@
     "react-dom": "19.1.0",
     "react-instantsearch-nextjs": "^1.0.2",
     "tailwindcss": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/node": "24.5.2",
+    "@types/react": "19.1.15",
+    "typescript": "5.9.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

@@ -17,13 +17,13 @@ export function ApiDetail({ api, onNavigate }) {
 
 	// Use API's code examples if available, otherwise fallback to default
 	const getCodeExamples = () => {
-			if (api.code_examples && api.code_examples.length > 0) {
-				const examples = {};
-				api.code_examples.forEach(example => {
-					examples[example.language] = example.code;
-				});
-				return examples;
-			}
+		if (api.code_examples && api.code_examples.length > 0) {
+			const examples = {};
+			api.code_examples.forEach(example => {
+				examples[example.language] = example.code;
+			});
+			return examples;
+		}
 
 		// Fallback to generated examples
 		return {
@@ -66,11 +66,11 @@ export function ApiDetail({ api, onNavigate }) {
 		}
 	};
 
-		const tabs = [
-			{ id: 'overview', label: 'Overview', icon: BookOpen },
-			{ id: 'code', label: 'Code Examples', icon: Code },
-			{ id: 'errors', label: 'Error Handling', icon: AlertCircle }
-		];
+	const tabs = [
+		{ id: 'overview', label: 'Overview', icon: BookOpen },
+		{ id: 'code', label: 'Code Examples', icon: Code },
+		{ id: 'errors', label: 'Error Handling', icon: AlertCircle }
+	];
 
 	return (
 		<div className="min-h-screen bg-white">
@@ -86,7 +86,7 @@ export function ApiDetail({ api, onNavigate }) {
 						</button>
 						<div>
 							<h1 className="text-2xl font-medium">{title}</h1>
-							<p className="text-gray-600">{api.description}</p>
+
 						</div>
 					</div>
 					<button
@@ -101,16 +101,17 @@ export function ApiDetail({ api, onNavigate }) {
 			<div className="max-w-7xl mx-auto px-6 py-8">
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 					{/* Main Content */}
+
 					<div className="lg:col-span-2 space-y-6">
+						<p className="text-gray-600">{api.description}</p>
 						{/* API Info Card */}
 						<div className="bg-white border border-gray-200 rounded-lg p-6">
 							<div className="flex items-center gap-4 mb-4">
-								<span className={`px-3 py-1 rounded-md font-medium ${
-									(currentEndpoint.method || 'GET') === 'GET' ? 'bg-blue-50 text-blue-600' :
+								<span className={`px-3 py-1 rounded-md font-medium ${(currentEndpoint.method || 'GET') === 'GET' ? 'bg-blue-50 text-blue-600' :
 									(currentEndpoint.method || '') === 'POST' ? 'bg-green-50 text-green-600' :
-									(currentEndpoint.method || '') === 'PUT' ? 'bg-yellow-50 text-yellow-600' :
-									'bg-red-50 text-red-600'
-								}`}>
+										(currentEndpoint.method || '') === 'PUT' ? 'bg-yellow-50 text-yellow-600' :
+											'bg-red-50 text-red-600'
+									}`}>
 									{(currentEndpoint.method || 'GET')}
 								</span>
 								<code className="bg-gray-100 px-3 py-1 rounded-md font-mono text-sm">
@@ -135,17 +136,15 @@ export function ApiDetail({ api, onNavigate }) {
 										<button
 											key={`${ep.method}-${ep.path}-${idx}`}
 											onClick={() => setActiveEndpointIndex(idx)}
-											className={`flex items-center justify-between w-full text-left px-3 py-2 rounded border ${
-												activeEndpointIndex === idx ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
-											}`}
+											className={`flex items-center justify-between w-full text-left px-3 py-2 rounded border ${activeEndpointIndex === idx ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:bg-gray-50'
+												}`}
 										>
 											<div className="flex items-center gap-3">
-												<span className={`text-xs px-2 py-1 rounded ${
-													(ep.method || 'GET') === 'GET' ? 'text-blue-600 bg-blue-100' :
+												<span className={`text-xs px-2 py-1 rounded ${(ep.method || 'GET') === 'GET' ? 'text-blue-600 bg-blue-100' :
 													(ep.method || '') === 'POST' ? 'text-green-600 bg-green-100' :
-													(ep.method || '') === 'PUT' ? 'text-yellow-600 bg-yellow-100' :
-													'text-red-600 bg-red-100'
-												}`}>{ep.method || 'GET'}</span>
+														(ep.method || '') === 'PUT' ? 'text-yellow-600 bg-yellow-100' :
+															'text-red-600 bg-red-100'
+													}`}>{ep.method || 'GET'}</span>
 												<code className="text-sm text-gray-700">{ep.path || '/'}</code>
 											</div>
 											<button
@@ -170,11 +169,10 @@ export function ApiDetail({ api, onNavigate }) {
 											<button
 												key={tab.id}
 												onClick={() => setActiveTab(tab.id)}
-												className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${
-													activeTab === tab.id
-														? 'border-b-2 border-blue-500 text-blue-600'
-														: 'text-gray-500 hover:text-gray-700'
-												}`}
+												className={`flex items-center gap-2 px-6 py-4 font-medium transition-colors ${activeTab === tab.id
+													? 'border-b-2 border-blue-500 text-blue-600'
+													: 'text-gray-500 hover:text-gray-700'
+													}`}
 											>
 												<Icon className="w-4 h-4" />
 												{tab.label}
@@ -237,7 +235,7 @@ export function ApiDetail({ api, onNavigate }) {
 											<h3 className="font-medium mb-3">Response</h3>
 											<div className="bg-gray-50 rounded-lg p-4">
 												<pre className="text-sm text-gray-700 font-mono">
-{`{
+													{`{
 	"id": "pi_1234567890",
 	"object": "payment_intent",
 	"amount": 2000,
@@ -255,17 +253,16 @@ export function ApiDetail({ api, onNavigate }) {
 									<div className="space-y-4">
 										<div className="flex gap-2 mb-4">
 											{Object.keys(codeExamples).map(lang => (
-																		<button
-																			key={lang}
-																			onClick={() => setSelectedLanguage(lang)}
-																			className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-																				selectedLanguage === lang
-																					? 'bg-blue-100 text-blue-600'
-																					: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-																			}`}
-																		>
-																			{lang === 'javascript' ? 'JavaScript' : lang === 'python' ? 'Python' : 'cURL'}
-																		</button>
+												<button
+													key={lang}
+													onClick={() => setSelectedLanguage(lang)}
+													className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${selectedLanguage === lang
+														? 'bg-blue-100 text-blue-600'
+														: 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+														}`}
+												>
+													{lang === 'javascript' ? 'JavaScript' : lang === 'python' ? 'Python' : 'cURL'}
+												</button>
 											))}
 										</div>
 
@@ -294,7 +291,7 @@ export function ApiDetail({ api, onNavigate }) {
 												</div>
 												<p className="text-gray-600 text-sm mb-2">Invalid parameters provided</p>
 												<pre className="bg-gray-50 p-3 rounded text-sm">
-{`{
+													{`{
 	"error": {
 		"type": "invalid_request_error",
 		"message": "Missing required parameter: amount"
@@ -310,7 +307,7 @@ export function ApiDetail({ api, onNavigate }) {
 												</div>
 												<p className="text-gray-600 text-sm mb-2">Authentication failed</p>
 												<pre className="bg-gray-50 p-3 rounded text-sm">
-{`{
+													{`{
 	"error": {
 		"type": "authentication_error",
 		"message": "Invalid API key provided"
@@ -331,7 +328,7 @@ export function ApiDetail({ api, onNavigate }) {
 						<div className="bg-white border border-gray-200 rounded-lg p-6">
 							<h3 className="font-medium mb-4">Quick Actions</h3>
 							<div className="space-y-3">
-								<button 
+								<button
 									onClick={() => handleCopy(codeExamples.javascript)}
 									className="w-full flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#4FACFE] to-[#00F2FE] text-white rounded-lg hover:opacity-90 transition-opacity"
 								>
@@ -362,11 +359,10 @@ export function ApiDetail({ api, onNavigate }) {
 								{api.difficulty && (
 									<div className="flex justify-between">
 										<span className="text-gray-600">Difficulty:</span>
-										<span className={`font-medium capitalize ${
-											api.difficulty === 'beginner' ? 'text-green-600' :
+										<span className={`font-medium capitalize ${api.difficulty === 'beginner' ? 'text-green-600' :
 											api.difficulty === 'intermediate' ? 'text-yellow-600' :
-											'text-red-600'
-										}`}>
+												'text-red-600'
+											}`}>
 											{api.difficulty}
 										</span>
 									</div>
@@ -374,11 +370,10 @@ export function ApiDetail({ api, onNavigate }) {
 								{api.pricing && (
 									<div className="flex justify-between">
 										<span className="text-gray-600">Pricing:</span>
-										<span className={`font-medium capitalize ${
-											api.pricing === 'free' ? 'text-green-600' :
+										<span className={`font-medium capitalize ${api.pricing === 'free' ? 'text-green-600' :
 											api.pricing === 'freemium' ? 'text-blue-600' :
-											'text-orange-600'
-										}`}>
+												'text-orange-600'
+											}`}>
 											{api.pricing}
 										</span>
 									</div>

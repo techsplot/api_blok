@@ -4,9 +4,9 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, User } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useStoryblok } from "@/app/lib/StoryblokContext";
+import { useStoryblok } from "./lib/StoryblokContext";
 import { autocomplete, getAlgoliaResults } from "@algolia/autocomplete-js";
-import { searchClient } from "@/app/lib/algolia";
+import { searchClient } from "./lib/algolia";
 import "@algolia/autocomplete-theme-classic";
 
 // Initialize Algolia

@@ -4,8 +4,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { SearchResults } from "../../components/SearchResults";
-import { useStoryblok } from "@/app/lib/StoryblokContext";
-import { transformStoryblokData } from "@/app/lib/transform";
+import { FullPageSearchLoading } from "../../components/LoadingComponents";
+import { useStoryblok } from "../lib/StoryblokContext";
+import { transformStoryblokData } from "../lib/transform";
 import { ArrowLeft } from "lucide-react";
 
 function SearchResultsContent() {
@@ -14,11 +15,17 @@ function SearchResultsContent() {
   const query = searchParams.get("q") || "";
   const { storyblokApi, version, cacheVersion } = useStoryblok();
   const [apiData, setApiData] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true
 
   // Fetch APIs using both Algolia (when coming from autocomplete) and Storyblok
   useEffect(() => {
     async function fetchApis() {
+      if (!query) {
+        setLoading(false);
+        setApiData([]);
+        return;
+      }
+      
       setLoading(true);
       try {
         // Check if we have search data from autocomplete
@@ -28,7 +35,7 @@ function SearchResultsContent() {
           const searchData = JSON.parse(storedSearchData);
           if (searchData.fromAutocomplete && searchData.selectedItem) {
             // Use Algolia search results if coming from autocomplete
-            const { searchClient } = await import("@/app/lib/algolia");
+            const { searchClient } = await import("../lib/algolia");
             const { getAlgoliaResults } = await import("@algolia/autocomplete-js");
 
             const results = await getAlgoliaResults({
@@ -62,6 +69,7 @@ function SearchResultsContent() {
               }));
               return {
                 id: item.objectID || item.id,
+                slug: item.slug,
                 name: item.name || item.slug,
                 description: item.description || "",
                 method,
@@ -101,6 +109,7 @@ function SearchResultsContent() {
           try { provider = item.base_url ? new URL(item.base_url).hostname : undefined; } catch {}
           return {
             id: item.objectID || item.id,
+            slug: item.slug,
             name: item.name || item.slug,
             description: item.description || "",
             method,
@@ -130,12 +139,25 @@ function SearchResultsContent() {
       setLoading(false);
     }
     
-    if (storyblokApi && query) fetchApis();
+    if (!storyblokApi) {
+      // Wait for storyblokApi to be initialized
+      if (query) {
+        setLoading(true);
+      }
+      return;
+    }
+    
+    if (query) fetchApis();
+    else {
+      setLoading(false);
+      setApiData([]);
+    }
   }, [storyblokApi, version, query, cacheVersion]);
 
   const handleApiSelect = (api) => {
     sessionStorage.setItem("selectedApi", JSON.stringify(api));
-    router.push(`/api/${api.id}`);
+    const slug = api.slug || (api.name ? api.name.toLowerCase().replace(/\s+/g, '_') : api.id);
+    router.push(`/api/${slug}`);
   };
 
   const handleNavigation = (screen) => {
@@ -158,6 +180,7 @@ function SearchResultsContent() {
     <SearchResults
       query={query}
       data={apiData}
+      loading={loading}
       onApiSelect={handleApiSelect}
       onNavigate={handleNavigation}
     />
@@ -166,16 +189,7 @@ function SearchResultsContent() {
 
 export default function SearchPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-white flex items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-2xl font-medium mb-4">Loading...</h1>
-            <p className="text-gray-600">Searching for APIs</p>
-          </div>
-        </div>
-      }
-    >
+    <Suspense fallback={<FullPageSearchLoading />}>
       <SearchResultsContent />
     </Suspense>
   );

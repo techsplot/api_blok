@@ -1,7 +1,7 @@
 
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { StoryblokContextProvider } from "@/app/lib/StoryblokContext";
+import { StoryblokContextProvider } from "./lib/StoryblokContext";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

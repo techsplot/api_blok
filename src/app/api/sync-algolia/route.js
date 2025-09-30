@@ -1,7 +1,7 @@
 import { algoliasearch } from "algoliasearch";
 import { NextResponse } from "next/server";
-import { getStoryblokApi } from "@/app/lib/storyblok";
-import { transformStoryblokData } from "@/app/lib/transform";
+import { getStoryblokApi } from "../../lib/storyblok";
+import { transformStoryblokData } from "../../lib/transform";
 
 const algoliaClient = algoliasearch(
   process.env.NEXT_PUBLIC_ALGOLIA_APP_ID,
