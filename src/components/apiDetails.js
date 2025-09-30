@@ -5,7 +5,12 @@ export function ApiDetail({ api, onNavigate }) {
 	const [selectedLanguage, setSelectedLanguage] = useState('javascript');
 	const [copied, setCopied] = useState(false);
 
-	// Track which endpoint is selected; default to the first
+	localStorage.setItem("activeDoc", JSON.stringify(api));
+	const stored = localStorage.getItem("activeDoc");
+	const parsed = stored ? JSON.parse(stored) : null;
+
+
+	console.log("tesy", parsed)
 	const [activeEndpointIndex, setActiveEndpointIndex] = useState(0);
 
 	// Normalized fields with backward compatibility
@@ -90,7 +95,7 @@ export function ApiDetail({ api, onNavigate }) {
 						</div>
 					</div>
 					<button
-						onClick={() => onNavigate('chat')}
+						onClick={() => onNavigate('chat', api)}
 						className="bg-gradient-to-r from-[#4FACFE] to-[#00F2FE] text-white px-4 py-2 rounded-lg hover:opacity-90 transition-opacity"
 					>
 						Ask AI About This API
