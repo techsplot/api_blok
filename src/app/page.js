@@ -175,7 +175,7 @@ export default function Home() {
       </header>
 
       {/* Main content */}
-      <main className="flex flex-col items-center flex-1 px-6 py-12 mt-40 w-full">
+      <main className="flex flex-col items-center flex-1 px-6 py-12 mt-30 w-full">
         {/* Search Section */}
         <div className="sticky top-20 z-40 w-full max-w-2xl bg-white pb-6">
           <h1 className="text-3xl font-medium text-gray-900 mb-2 text-center">Search APIs!</h1>
@@ -191,12 +191,12 @@ export default function Home() {
         </div>
 
         {/* Storyblok Data Preview */}
-        {apiData && (
+        {/* {apiData && (
           <div className="mt-10 p-6 border rounded-lg shadow bg-white max-w-xl text-center">
             <h2 className="text-xl font-bold mb-2">API Details (from Storyblok)</h2>
-            <pre className="text-sm text-left overflow-x-auto">{JSON.stringify(apiData, null, 2)}</pre>
+            <pre className="text-sm text-left overflow-x-auto">{JSON.stringify(apiData, null, 6)}</pre>
           </div>
-        )}
+        )} */}
       </main>
 
       {/* Footer */}

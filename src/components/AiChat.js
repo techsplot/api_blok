@@ -21,6 +21,8 @@ export function AiChat({ onNavigate }) {
   const [copied, setCopied] = useState(null);
   const [userProfile, setUserProfile] = useState({ hasAnsweredOnboarding: false });
   const [currentOnboardingStep, setCurrentOnboardingStep] = useState(0);
+  const [qaQuestions, setQaQuestions] = useState([]);
+  const [isLoadingQA, setIsLoadingQA] = useState(false);
   const messagesEndRef = useRef(null);
 
   // ✅ Load API doc from localStorage
@@ -34,6 +36,41 @@ export function AiChat({ onNavigate }) {
       console.error('Failed to parse activeDoc:', err);
     }
   }, []);
+
+  // ✅ Fetch Q&A questions when apiDoc loads
+  useEffect(() => {
+    if (!apiDoc) return;
+
+    const fetchQAQuestions = async () => {
+      setIsLoadingQA(true);
+      try {
+        const response = await fetch('/api/smart-qa', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'getAPIQuestions',
+            apiSlug: apiDoc.slug || apiDoc.name?.toLowerCase(),
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.questions && data.questions.length > 0) {
+            setQaQuestions(data.questions.slice(0, 6)); // Limit to 6 questions
+            console.log(`✅ Loaded ${data.questions.length} Q&A questions for ${apiDoc.name}`);
+          } else {
+            console.log('ℹ️ No Q&A questions available for this API');
+          }
+        }
+      } catch (error) {
+        console.error('❌ Error fetching Q&A questions:', error);
+      } finally {
+        setIsLoadingQA(false);
+      }
+    };
+
+    fetchQAQuestions();
+  }, [apiDoc]);
 
   const onboardingQuestions = [
     {
@@ -155,24 +192,24 @@ export function AiChat({ onNavigate }) {
         setMessages((prev) => [...prev, nextMessage]);
         setIsTyping(false);
       } else {
-        setUserProfile((prev) => {
-          const finalProfile = {
-            ...prev,
-            ...updatedProfileFields,
-            hasAnsweredOnboarding: true,
-          };
-          const personalizedWelcome = generatePersonalizedWelcome(finalProfile);
-          const nextMessage = {
-            id: Date.now().toString(),
-            content: personalizedWelcome,
-            isUser: false,
-            timestamp: new Date(),
-            type: 'guidance',
-          };
-          setMessages((prevMsgs) => [...prevMsgs, nextMessage]);
-          setIsTyping(false);
-          return finalProfile;
-        });
+        // Last onboarding step - finalize profile and show welcome
+        const finalProfile = {
+          ...userProfile,
+          ...updatedProfileFields,
+          hasAnsweredOnboarding: true,
+        };
+        setUserProfile(finalProfile);
+        
+        const personalizedWelcome = generatePersonalizedWelcome(finalProfile);
+        const nextMessage = {
+          id: Date.now().toString(),
+          content: personalizedWelcome,
+          isUser: false,
+          timestamp: new Date(),
+          type: 'guidance',
+        };
+        setMessages((prev) => [...prev, nextMessage]);
+        setIsTyping(false);
       }
     }, 1200);
   };
@@ -271,6 +308,60 @@ ${currentInput}
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  // ✅ Handle Q&A button click - get instant answer from database
+  const handleQAClick = async (qaItem) => {
+    // Add user question to messages
+    const userMessage = {
+      id: Date.now().toString(),
+      content: qaItem.question,
+      isUser: true,
+      timestamp: new Date(),
+    };
+    setMessages((prev) => [...prev, userMessage]);
+    setIsTyping(true);
+
+    try {
+      // Fetch quick answer from Q&A database
+      const response = await fetch('/api/smart-qa', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'getQuickQA',
+          qaId: qaItem.id,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch Q&A answer');
+      
+      const data = await response.json();
+
+      // Add AI response with Q&A badge
+      const aiResponse = {
+        id: (Date.now() + 1).toString(),
+        content: data.response,
+        isUser: false,
+        timestamp: new Date(),
+        source: 'qa_database',
+        hasCode: data.response.includes('```'),
+        codeExample: data.response.includes('```')
+          ? data.response.split('```')[1]?.split('\n').slice(1).join('\n').trim()
+          : undefined,
+      };
+      setMessages((prev) => [...prev, aiResponse]);
+    } catch (error) {
+      console.error('❌ Error fetching Q&A:', error);
+      const errorResponse = {
+        id: (Date.now() + 1).toString(),
+        content: "Sorry, I couldn't retrieve that answer. Let me try with AI instead...",
+        isUser: false,
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, errorResponse]);
+    } finally {
+      setIsTyping(false);
     }
   };
 
@@ -385,6 +476,11 @@ ${currentInput}
                         minute: '2-digit',
                       })}
                     </span>
+                    {message.source === 'qa_database' && (
+                      <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                        ⚡ Quick Answer
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -435,8 +531,37 @@ ${currentInput}
         </div>
       )}
 
+      {/* Q&A Quick Answers */}
+      {!isOnboarding && qaQuestions.length > 0 && messages.length <= 2 && (
+        <div className="px-6 pb-4 pt-2 bg-white border-t border-gray-100">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                Quick Answers from Knowledge Base
+              </p>
+              <span className="text-xs text-gray-500 bg-green-50 px-2 py-1 rounded-full">
+                Instant Response
+              </span>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {qaQuestions.map((qa) => (
+                <button
+                  key={qa.id}
+                  onClick={() => handleQAClick(qa)}
+                  className="flex items-start gap-2 p-3 bg-gradient-to-br from-green-50 to-blue-50 hover:from-green-100 hover:to-blue-100 border border-green-200 rounded-lg text-left text-sm transition-all hover:shadow-md group"
+                >
+                  <span className="text-green-600 font-bold text-xs mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform">Q</span>
+                  <span className="text-gray-800 line-clamp-2">{qa.question}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Suggested prompts */}
-      {!isOnboarding && messages.length < 5 && apiDoc && (
+      {!isOnboarding && messages.length < 5 && apiDoc && qaQuestions.length === 0 && (
         <div className="px-6 pb-4 pt-2 bg-white border-t border-gray-100">
           <div className="max-w-4xl mx-auto">
             <p className="text-sm text-gray-500 mb-2">

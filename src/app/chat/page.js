@@ -2,7 +2,7 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
-import { AiChat } from '../../components/AiChat';
+import { AiChat } from '../../components/aichat';
 
 export default function ChatPage() {
   const router = useRouter();
