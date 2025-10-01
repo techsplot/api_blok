@@ -8,7 +8,7 @@ const algoliaClient = algoliasearch(
   process.env.ALGOLIA_ADMIN_KEY
 );
 
-export async function GET() {
+export async function POST() {
   try {
     const storyblokApi = getStoryblokApi();
 
